@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Estado de la tarea #{{ task_id }}</h1>
+<div id="status"></div>
+<script>
+    async function loadStatus() {
+        const res = await fetch(`/task/{{ task_id }}`);
+        const data = await res.json();
+        const div = document.getElementById('status');
+        if (data.status === 'completed') {
+            div.innerHTML = `
+                <div class="alert alert-success">✅ Completada</div>
+                <a href="/download/{{ task_id }}/excel" class="btn btn-success">Descargar Excel</a>
+                <a href="/download/{{ task_id }}/log" class="btn btn-secondary">Descargar Log</a>
+            `;
+        } else if (data.status === 'failed') {
+            div.innerHTML = `<div class="alert alert-danger">❌ Error: ${data.error}</div>`;
+        } else {
+            div.innerHTML = `<div class="alert alert-info">⏳ Procesando... <div class="spinner-border"></div></div>`;
+            setTimeout(loadStatus, 3000);
+        }
+    }
+    loadStatus();
+</script>
+{% endblock %}

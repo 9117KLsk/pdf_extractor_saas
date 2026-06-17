@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Sube tus PDFs</h1>
+<form id="uploadForm" enctype="multipart/form-data">
+    <div class="mb-3">
+        <label for="pdfFiles" class="form-label">Selecciona uno o varios PDFs</label>
+        <input class="form-control" type="file" id="pdfFiles" name="files" multiple accept=".pdf" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Subir y procesar</button>
+</form>
+<div id="progress" class="mt-3 d-none">
+    <div class="spinner-border text-primary" role="status"></div>
+    <span>Procesando... esto puede tardar varios minutos.</span>
+    <div id="taskLink"></div>
+</div>
+<script>
+    document.getElementById('uploadForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const formData = new FormData();
+        const files = document.getElementById('pdfFiles').files;
+        for (let file of files) formData.append('files', file);
+        const res = await fetch('/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+        document.getElementById('progress').classList.remove('d-none');
+        document.getElementById('taskLink').innerHTML = `<a href="/task/${data.task_id}" target="_blank">Ver estado de la tarea #${data.task_id}</a>`;
+        pollTask(data.task_id);
+    };
+    async function pollTask(taskId) {
+        const interval = setInterval(async () => {
+            const res = await fetch(`/task/${taskId}`);
+            const data = await res.json();
+            if (data.status === 'completed') {
+                clearInterval(interval);
+                window.location.href = `/task/${taskId}`;
+            } else if (data.status === 'failed') {
+                clearInterval(interval);
+                alert('Error: ' + data.error);
+            }
+        }, 5000);
+    }
+</script>
+{% endblock %}
